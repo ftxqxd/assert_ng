@@ -28,7 +28,9 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
     let expr: P<ast::Expr> = parser.parse_expr();
 
     let res = if parser.eat(&token::Comma) {
+        let lo = parser.span.lo;
         let ts = parser.parse_all_token_trees();
+        let hi = parser.span.lo; // Not so sure about this
         let pth = ast::Path {
             span: DUMMY_SP,
             global: false,
@@ -42,7 +44,19 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                 }
             ],
         };
-        parser.mk_mac_expr(expr.span.lo, expr.span.hi, ast::MacInvocTT(pth, ts, ast::EMPTY_CTXT))
+        let span = expr.span;
+        let mac = parser.mk_mac_expr(lo, hi, ast::MacInvocTT(pth, ts, ast::EMPTY_CTXT));
+        let cond = parser.mk_expr(span.lo, span.hi, ast::ExprUnary(ast::UnNot, expr));
+        parser.mk_expr(span.lo, span.hi,
+            ast::ExprIf(cond,
+                P(ast::Block {
+                    view_items: vec![],
+                    stmts: vec![],
+                    expr: Some(mac),
+                    id: ast::DUMMY_NODE_ID,
+                    rules: ast::DefaultBlock,
+                    span: span,
+                }), None))
     } else {
         match expr.node {
             ast::ExprBinary(ast::BiEq, ref given, ref expected) => {
