@@ -1,0 +1,8 @@
+[package]
+name = "assert_ng"
+version = "0.0.1"
+authors = ["P1start"]
+
+[lib]
+name = "assert_ng"
+crate-type = ["dylib"]
