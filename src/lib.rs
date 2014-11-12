@@ -47,7 +47,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
         match expr.node {
             ast::ExprBinary(ast::BiEq, ref given, ref expected) => {
                 quote_expr!(cx,
-                    match (&$given, &$expected) {
+                    match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val == *expected_val) {
                                 panic!("assertion failed: left == right:\n\
@@ -60,7 +60,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             },
             ast::ExprBinary(ast::BiNe, ref given, ref expected) => {
                 quote_expr!(cx,
-                    match (&$given, &$expected) {
+                    match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val != *expected_val) {
                                 panic!("assertion failed: left != right:\n\
@@ -73,7 +73,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             },
             ast::ExprBinary(ast::BiGt, ref given, ref expected) => {
                 quote_expr!(cx,
-                    match (&$given, &$expected) {
+                    match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val > *expected_val) {
                                 panic!("assertion failed: left > right:\n\
@@ -86,7 +86,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             },
             ast::ExprBinary(ast::BiLt, ref given, ref expected) => {
                 quote_expr!(cx,
-                    match (&$given, &$expected) {
+                    match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val < *expected_val) {
                                 panic!("assertion failed: left < right:\n\
@@ -99,7 +99,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             },
             ast::ExprBinary(ast::BiGe, ref given, ref expected) => {
                 quote_expr!(cx,
-                    match (&$given, &$expected) {
+                    match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val >= *expected_val) {
                                 panic!("assertion failed: left >= right:\n\
@@ -112,7 +112,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             },
             ast::ExprBinary(ast::BiLe, ref given, ref expected) => {
                 quote_expr!(cx,
-                    match (&$given, &$expected) {
+                    match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val <= *expected_val) {
                                 panic!("assertion failed: left <= right:\n\
@@ -125,7 +125,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             },
             _ => {
                 quote_expr!(cx,
-                    if !$expr {
+                    if !($expr) {
                         panic!(concat!("assertion failed: ", stringify!($expr)));
                     }
                 )
