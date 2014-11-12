@@ -49,8 +49,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                 quote_expr!(cx,
                     match (&$given, &$expected) {
                         (given_val, expected_val) => {
-                            if !(*given_val == *expected_val
-                              && *expected_val == *given_val) {
+                            if !(*given_val == *expected_val) {
                                 panic!("assertion failed: left == right:\n\
                                         left:  `{}`\n\
                                         right: `{}`", *given_val, *expected_val);
@@ -63,8 +62,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                 quote_expr!(cx,
                     match (&$given, &$expected) {
                         (given_val, expected_val) => {
-                            if !(*given_val != *expected_val
-                              && *expected_val != *given_val) {
+                            if !(*given_val != *expected_val) {
                                 panic!("assertion failed: left != right:\n\
                                         left:  `{}`\n\
                                         right: `{}`", *given_val, *expected_val);
@@ -77,8 +75,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                 quote_expr!(cx,
                     match (&$given, &$expected) {
                         (given_val, expected_val) => {
-                            if !(*given_val > *expected_val
-                              && *expected_val < *given_val) {
+                            if !(*given_val > *expected_val) {
                                 panic!("assertion failed: left > right:\n\
                                         left:  `{}`\n\
                                         right: `{}`", *given_val, *expected_val);
@@ -91,8 +88,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                 quote_expr!(cx,
                     match (&$given, &$expected) {
                         (given_val, expected_val) => {
-                            if !(*given_val < *expected_val
-                              && *expected_val > *given_val) {
+                            if !(*given_val < *expected_val) {
                                 panic!("assertion failed: left < right:\n\
                                         left:  `{}`\n\
                                         right: `{}`", *given_val, *expected_val);
@@ -105,8 +101,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                 quote_expr!(cx,
                     match (&$given, &$expected) {
                         (given_val, expected_val) => {
-                            if !(*given_val >= *expected_val
-                              && *expected_val <= *given_val) {
+                            if !(*given_val >= *expected_val) {
                                 panic!("assertion failed: left >= right:\n\
                                         left:  `{}`\n\
                                         right: `{}`", *given_val, *expected_val);
@@ -119,8 +114,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                 quote_expr!(cx,
                     match (&$given, &$expected) {
                         (given_val, expected_val) => {
-                            if !(*given_val <= *expected_val
-                              && *expected_val >= *given_val) {
+                            if !(*given_val <= *expected_val) {
                                 panic!("assertion failed: left <= right:\n\
                                         left:  `{}`\n\
                                         right: `{}`", *given_val, *expected_val);
