@@ -64,9 +64,12 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val == *expected_val) {
-                                panic!("assertion failed: left == right:\n\
+                                panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
-                                        right: `{}`", *given_val, *expected_val);
+                                        right: `{}`",
+                                       stringify!($expr),
+                                       *given_val,
+                                       *expected_val);
                             }
                         }
                     }
@@ -77,9 +80,12 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val != *expected_val) {
-                                panic!("assertion failed: left != right:\n\
+                                panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
-                                        right: `{}`", *given_val, *expected_val);
+                                        right: `{}`",
+                                       stringify!($expr),
+                                       *given_val,
+                                       *expected_val);
                             }
                         }
                     }
@@ -90,9 +96,12 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val > *expected_val) {
-                                panic!("assertion failed: left > right:\n\
+                                panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
-                                        right: `{}`", *given_val, *expected_val);
+                                        right: `{}`",
+                                       stringify!($expr),
+                                       *given_val,
+                                       *expected_val);
                             }
                         }
                     }
@@ -103,9 +112,12 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val < *expected_val) {
-                                panic!("assertion failed: left < right:\n\
+                                panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
-                                        right: `{}`", *given_val, *expected_val);
+                                        right: `{}`",
+                                       stringify!($expr),
+                                       *given_val,
+                                       *expected_val);
                             }
                         }
                     }
@@ -116,9 +128,12 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val >= *expected_val) {
-                                panic!("assertion failed: left >= right:\n\
+                                panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
-                                        right: `{}`", *given_val, *expected_val);
+                                        right: `{}`",
+                                       stringify!($expr),
+                                       *given_val,
+                                       *expected_val);
                             }
                         }
                     }
@@ -129,9 +144,12 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     match (&($given), &($expected)) {
                         (given_val, expected_val) => {
                             if !(*given_val <= *expected_val) {
-                                panic!("assertion failed: left <= right:\n\
+                                panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
-                                        right: `{}`", *given_val, *expected_val);
+                                        right: `{}`",
+                                       stringify!($expr),
+                                       *given_val,
+                                       *expected_val);
                             }
                         }
                     }
