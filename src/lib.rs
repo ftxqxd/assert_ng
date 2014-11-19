@@ -1,14 +1,16 @@
 #![crate_type="dylib"]
-#![feature(plugin_registrar, quote)]
+#![feature(plugin_registrar, quote, slicing_syntax)]
 
 extern crate syntax;
 extern crate rustc;
 
 use syntax::codemap::{DUMMY_SP, Span};
-use syntax::parse::token;
+use syntax::parse::{mod, token, lexer};
+use syntax::parse::lexer::Reader;
 use syntax::ast::{mod, TokenTree};
 use syntax::ptr::P;
 use syntax::ext::base::{ExtCtxt, MacResult, MacExpr};
+use syntax::ext::build::AstBuilder;
 use rustc::plugin::Registry;
 
 fn expand_assert_ng(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree])
@@ -58,6 +60,45 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     span: span,
                 }), None))
     } else {
+        let cm = &cx.parse_sess.span_diagnostic.cm;
+        let expr_span_string = cm.span_to_snippet(expr.span).unwrap();
+
+        let sess = parse::new_parse_sess();
+        let fm = parse::string_to_filemap(&sess, expr_span_string, "<stdin>".to_string());
+        let mut lexer = lexer::StringReader::new(&sess.span_diagnostic, fm);
+
+        let mut expr_to_string = String::new();
+
+        loop {
+            let next = lexer.next_token();
+
+            let string = sess.span_diagnostic.cm.span_to_snippet(next.sp).unwrap();
+
+            let stringified = match next.tok {
+                token::Eof => break,
+                token::Comment => {
+                    format!("/* {} */", string.trim_left_chars('/').trim())
+                },
+                _ => {
+                    string
+                }
+            };
+
+            expr_to_string.push_str(&*stringified);
+        }
+
+        let mut expr_span_string = String::new();
+        for (i, l) in expr_to_string.lines().enumerate() {
+            if i != 0 {
+                expr_span_string.push(' ');
+                expr_span_string.push_str(l.trim());
+            } else {
+                expr_span_string.push_str(l.trim());
+            }
+        }
+
+        let expr_to_string_expr =
+            cx.expr_str(expr.span, token::intern_and_get_ident(expr_span_string.trim()));
         match expr.node {
             ast::ExprBinary(ast::BiEq, ref given, ref expected) => {
                 quote_expr!(cx,
@@ -67,7 +108,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                                 panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
                                         right: `{}`",
-                                       stringify!($expr),
+                                       $expr_to_string_expr,
                                        *given_val,
                                        *expected_val);
                             }
@@ -83,7 +124,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                                 panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
                                         right: `{}`",
-                                       stringify!($expr),
+                                       $expr_to_string_expr,
                                        *given_val,
                                        *expected_val);
                             }
@@ -99,7 +140,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                                 panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
                                         right: `{}`",
-                                       stringify!($expr),
+                                       $expr_to_string_expr,
                                        *given_val,
                                        *expected_val);
                             }
@@ -115,7 +156,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                                 panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
                                         right: `{}`",
-                                       stringify!($expr),
+                                       $expr_to_string_expr,
                                        *given_val,
                                        *expected_val);
                             }
@@ -131,7 +172,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                                 panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
                                         right: `{}`",
-                                       stringify!($expr),
+                                       $expr_to_string_expr,
                                        *given_val,
                                        *expected_val);
                             }
@@ -147,7 +188,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                                 panic!("assertion failed: {}:\n\
                                         left:  `{}`\n\
                                         right: `{}`",
-                                       stringify!($expr),
+                                       $expr_to_string_expr,
                                        *given_val,
                                        *expected_val);
                             }
@@ -158,7 +199,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             _ => {
                 quote_expr!(cx,
                     if !($expr) {
-                        panic!(concat!("assertion failed: ", stringify!($expr)));
+                        panic!(concat!("assertion failed: ", $expr_to_string_expr));
                     }
                 )
             }
