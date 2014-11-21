@@ -2,7 +2,15 @@
 name = "assert_ng"
 version = "0.0.3"
 authors = ["P1start"]
+homepage = "https://github.com/P1start/assert_ng"
+repository = "https://github.com/P1start/assert_ng"
+readme = "README.md"
+description = """
+An extended assert macro that extends Rust’s built-in assert macro to give
+better messages on failure.
+"""
+keywords = ["plugin"]
 
 [lib]
 name = "assert_ng"
-crate-type = ["dylib"]
+plugin = true
