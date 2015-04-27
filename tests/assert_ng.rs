@@ -1,22 +1,37 @@
-#![feature(phase)]
+#![feature(plugin)]
 
-#[phase(plugin)]
-extern crate assert_ng;
+#![plugin(assert_ng)]
 
 #[test]
 fn assert_with_message() {
-    assert_ng!(1i == 1, "foo bar");
+    assert_ng!(1 == 1, "foo bar");
 }
 
 #[test]
-fn test_complex_expression() {
-    assert_ng!(1i + 1i == 2i);
-    assert_ng!(   1i // foo
-               +  1i // bar
-               != 1i);
-    assert_ng!(1i + 1i >  1i);
-    assert_ng!(1i + 1i >= 2i);
-    assert_ng!(1i + 1i <  3i);
-    assert_ng!(1i + 1i <= 3i);
+#[should_panic(expected = "assertion failed: 1 + 1 == 1:
+left:  `2`
+right: `1`")]
+fn simple_eq() {
+    assert_ng!(1 + 1 == 1);
+}
+
+#[test]
+#[should_panic(expected = "assertion failed: 1 /* foo */ + 1 /* bar */ == 1:
+left:  `2`
+right: `1`")]
+fn comments() {
+    assert_ng!(  1 // foo
+               + 1 // bar
+               == 1);
+}
+
+#[test]
+fn complex_expressions() {
+    assert_ng!(1 + 1 == 2);
+    assert_ng!(1 + 1 != 1);
+    assert_ng!(1 + 1 >  1);
+    assert_ng!(1 + 1 >= 2);
+    assert_ng!(1 + 1 <  3);
+    assert_ng!(1 + 1 <= 3);
     assert_ng!(true && true);
 }

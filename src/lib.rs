@@ -1,15 +1,15 @@
 #![crate_type="dylib"]
-#![feature(plugin_registrar, quote, slicing_syntax)]
+#![feature(plugin_registrar, quote, rustc_private)]
 
 extern crate syntax;
 extern crate rustc;
 
 use syntax::codemap::{DUMMY_SP, Span};
-use syntax::parse::{mod, token, lexer};
+use syntax::parse::{self, token, lexer};
 use syntax::parse::lexer::Reader;
-use syntax::ast::{mod, TokenTree};
+use syntax::ast::{self, TokenTree};
 use syntax::ptr::P;
-use syntax::ext::base::{ExtCtxt, MacResult, MacExpr};
+use syntax::ext::base::{ExtCtxt, MacResult, MacEager, DummyResult};
 use syntax::ext::build::AstBuilder;
 use rustc::plugin::Registry;
 
@@ -23,15 +23,24 @@ fn expand_debug_assert_ng(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree])
     expand_assert_ng_(cx, sp, args, true)
 }
 
-fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: bool)
+macro_rules! try_parse {
+    ($sp: expr, $e: expr) => {
+        match $e.ok() {
+            Some(e) => e,
+            None => return DummyResult::any($sp),
+        }
+    }
+}
+
+fn expand_assert_ng_(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree], debug_only: bool)
         -> Box<MacResult + 'static> {
     let mut parser = cx.new_parser_from_tts(args);
 
     let expr: P<ast::Expr> = parser.parse_expr();
 
-    let res = if parser.eat(&token::Comma) {
+    let res = if try_parse!(sp, parser.eat(&token::Comma)) {
         let lo = parser.span.lo;
-        let ts = parser.parse_all_token_trees();
+        let ts = try_parse!(sp, parser.parse_all_token_trees());
         let hi = parser.span.lo; // Not so sure about this
         let pth = ast::Path {
             span: DUMMY_SP,
@@ -41,6 +50,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
                     identifier: ast::Ident::new(token::intern("panic")),
                     parameters: ast::AngleBracketedParameters(ast::AngleBracketedParameterData {
                         lifetimes: vec![],
+                        bindings: syntax::owned_slice::OwnedSlice::empty(),
                         types: syntax::owned_slice::OwnedSlice::empty(),
                     }),
                 }
@@ -52,7 +62,6 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
         parser.mk_expr(span.lo, span.hi,
             ast::ExprIf(cond,
                 P(ast::Block {
-                    view_items: vec![],
                     stmts: vec![],
                     expr: Some(mac),
                     id: ast::DUMMY_NODE_ID,
@@ -77,7 +86,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
             let stringified = match next.tok {
                 token::Eof => break,
                 token::Comment => {
-                    format!("/* {} */", string.trim_left_chars('/').trim())
+                    format!("/* {} */", string.trim_left_matches('/').trim())
                 },
                 _ => {
                     string
@@ -100,101 +109,110 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
         let expr_to_string_expr =
             cx.expr_str(expr.span, token::intern_and_get_ident(expr_span_string.trim()));
         match expr.node {
-            ast::ExprBinary(ast::BiEq, ref given, ref expected) => {
-                quote_expr!(cx,
-                    match (&($given), &($expected)) {
-                        (given_val, expected_val) => {
-                            if !(*given_val == *expected_val) {
-                                panic!("assertion failed: {}:\n\
-                                        left:  `{}`\n\
-                                        right: `{}`",
-                                       $expr_to_string_expr,
-                                       *given_val,
-                                       *expected_val);
+            ast::ExprBinary(ref op, ref given, ref expected) => match op.node {
+                ast::BiEq => {
+                    quote_expr!(cx,
+                        match (&($given), &($expected)) {
+                            (given_val, expected_val) => {
+                                if !(*given_val == *expected_val) {
+                                    panic!("assertion failed: {}:\n\
+                                            left:  `{}`\n\
+                                            right: `{}`",
+                                           $expr_to_string_expr,
+                                           *given_val,
+                                           *expected_val);
+                                }
                             }
                         }
-                    }
-                )
-            },
-            ast::ExprBinary(ast::BiNe, ref given, ref expected) => {
-                quote_expr!(cx,
-                    match (&($given), &($expected)) {
-                        (given_val, expected_val) => {
-                            if !(*given_val != *expected_val) {
-                                panic!("assertion failed: {}:\n\
-                                        left:  `{}`\n\
-                                        right: `{}`",
-                                       $expr_to_string_expr,
-                                       *given_val,
-                                       *expected_val);
+                    )
+                },
+                ast::BiNe => {
+                    quote_expr!(cx,
+                        match (&($given), &($expected)) {
+                            (given_val, expected_val) => {
+                                if !(*given_val != *expected_val) {
+                                    panic!("assertion failed: {}:\n\
+                                            left:  `{}`\n\
+                                            right: `{}`",
+                                           $expr_to_string_expr,
+                                           *given_val,
+                                           *expected_val);
+                                }
                             }
                         }
-                    }
-                )
-            },
-            ast::ExprBinary(ast::BiGt, ref given, ref expected) => {
-                quote_expr!(cx,
-                    match (&($given), &($expected)) {
-                        (given_val, expected_val) => {
-                            if !(*given_val > *expected_val) {
-                                panic!("assertion failed: {}:\n\
-                                        left:  `{}`\n\
-                                        right: `{}`",
-                                       $expr_to_string_expr,
-                                       *given_val,
-                                       *expected_val);
+                    )
+                },
+                ast::BiGt => {
+                    quote_expr!(cx,
+                        match (&($given), &($expected)) {
+                            (given_val, expected_val) => {
+                                if !(*given_val > *expected_val) {
+                                    panic!("assertion failed: {}:\n\
+                                            left:  `{}`\n\
+                                            right: `{}`",
+                                           $expr_to_string_expr,
+                                           *given_val,
+                                           *expected_val);
+                                }
                             }
                         }
-                    }
-                )
-            },
-            ast::ExprBinary(ast::BiLt, ref given, ref expected) => {
-                quote_expr!(cx,
-                    match (&($given), &($expected)) {
-                        (given_val, expected_val) => {
-                            if !(*given_val < *expected_val) {
-                                panic!("assertion failed: {}:\n\
-                                        left:  `{}`\n\
-                                        right: `{}`",
-                                       $expr_to_string_expr,
-                                       *given_val,
-                                       *expected_val);
+                    )
+                },
+                ast::BiLt => {
+                    quote_expr!(cx,
+                        match (&($given), &($expected)) {
+                            (given_val, expected_val) => {
+                                if !(*given_val < *expected_val) {
+                                    panic!("assertion failed: {}:\n\
+                                            left:  `{}`\n\
+                                            right: `{}`",
+                                           $expr_to_string_expr,
+                                           *given_val,
+                                           *expected_val);
+                                }
                             }
                         }
-                    }
-                )
-            },
-            ast::ExprBinary(ast::BiGe, ref given, ref expected) => {
-                quote_expr!(cx,
-                    match (&($given), &($expected)) {
-                        (given_val, expected_val) => {
-                            if !(*given_val >= *expected_val) {
-                                panic!("assertion failed: {}:\n\
-                                        left:  `{}`\n\
-                                        right: `{}`",
-                                       $expr_to_string_expr,
-                                       *given_val,
-                                       *expected_val);
+                    )
+                },
+                ast::BiGe => {
+                    quote_expr!(cx,
+                        match (&($given), &($expected)) {
+                            (given_val, expected_val) => {
+                                if !(*given_val >= *expected_val) {
+                                    panic!("assertion failed: {}:\n\
+                                            left:  `{}`\n\
+                                            right: `{}`",
+                                           $expr_to_string_expr,
+                                           *given_val,
+                                           *expected_val);
+                                }
                             }
                         }
-                    }
-                )
-            },
-            ast::ExprBinary(ast::BiLe, ref given, ref expected) => {
-                quote_expr!(cx,
-                    match (&($given), &($expected)) {
-                        (given_val, expected_val) => {
-                            if !(*given_val <= *expected_val) {
-                                panic!("assertion failed: {}:\n\
-                                        left:  `{}`\n\
-                                        right: `{}`",
-                                       $expr_to_string_expr,
-                                       *given_val,
-                                       *expected_val);
+                    )
+                },
+                ast::BiLe => {
+                    quote_expr!(cx,
+                        match (&($given), &($expected)) {
+                            (given_val, expected_val) => {
+                                if !(*given_val <= *expected_val) {
+                                    panic!("assertion failed: {}:\n\
+                                            left:  `{}`\n\
+                                            right: `{}`",
+                                           $expr_to_string_expr,
+                                           *given_val,
+                                           *expected_val);
+                                }
                             }
                         }
-                    }
-                )
+                    )
+                },
+                _ => {
+                    quote_expr!(cx,
+                        if !($expr) {
+                            panic!(concat!("assertion failed: ", $expr_to_string_expr));
+                        }
+                    )
+                }
             },
             _ => {
                 quote_expr!(cx,
@@ -206,7 +224,7 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, _: Span, args: &[TokenTree], debug_only: 
         }
     };
 
-    MacExpr::new(if debug_only {
+    MacEager::expr(if debug_only {
         quote_expr!(cx, if cfg!(not(ndebug)) { $res })
     } else {
         res
