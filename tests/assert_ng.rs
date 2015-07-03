@@ -3,8 +3,9 @@
 #![plugin(assert_ng)]
 
 #[test]
+#[should_panic(expected = "foo bar")]
 fn assert_with_message() {
-    assert_ng!(1 == 1, "foo bar");
+    assert_ng!(1 != 1, "foo bar");
 }
 
 #[test]

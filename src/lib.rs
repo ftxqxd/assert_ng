@@ -72,8 +72,8 @@ fn expand_assert_ng_(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree], debug_only:
         let cm = &cx.parse_sess.span_diagnostic.cm;
         let expr_span_string = cm.span_to_snippet(expr.span).unwrap();
 
-        let sess = parse::new_parse_sess();
-        let fm = parse::string_to_filemap(&sess, expr_span_string, "<stdin>".to_string());
+        let sess = parse::ParseSess::new();
+        let fm = sess.span_diagnostic.cm.new_filemap("<stdin>".to_string(), expr_span_string);
         let mut lexer = lexer::StringReader::new(&sess.span_diagnostic, fm);
 
         let mut expr_to_string = String::new();
